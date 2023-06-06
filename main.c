@@ -60,10 +60,13 @@ int within_range(vx2 point) {
     return 1;
 }
 
-void add_point(vx2 point, char canvas[DIMY][DIMX*2+1]) {
+void add_point(vx2 point, char canvas[DIMY][DIMX*2+1], char rep1, char rep2) {
     if (within_range(point) != 0) { return; }
-    canvas[(int) round(point.y)][(int) round(point.x) * 2] = '[';
-    canvas[(int) round(point.y)][(int) round(point.x) * 2 + 1] = ']';
+    canvas[(int) round(point.y)][(int) round(point.x) * 2] = rep1;
+    canvas[(int) round(point.y)][(int) round(point.x) * 2 + 1] = rep2;
+}
+void blank_point(vx2 point, char canvas[DIMY][DIMX*2+1]) {
+    add_point(point, canvas, '[', ']');
 }
 
 void grad_line(vx2 c1, vx2 c2, char canvas[DIMY][DIMX*2+1]) {
@@ -72,7 +75,7 @@ void grad_line(vx2 c1, vx2 c2, char canvas[DIMY][DIMX*2+1]) {
     while (current.x < c2.x) {
         current.x += 1.;
         current.y += slope;
-        add_point(current, canvas);
+        blank_point(current, canvas);
     }
 }
 void steep_line(vx2 c1, vx2 c2, char canvas[DIMY][DIMX*2+1]) {
@@ -81,7 +84,7 @@ void steep_line(vx2 c1, vx2 c2, char canvas[DIMY][DIMX*2+1]) {
     while (current.y < c2.y) {
         current.y += 1.;
         current.x += slope;
-        add_point(current, canvas);
+        blank_point(current, canvas);
     }
 }
 
@@ -93,27 +96,44 @@ void make_line(vx2 c1, vx2 c2, char canvas[DIMY][DIMX*2+1]) {
         } else {
             grad_line(c1, c2, canvas);
         }
-        add_point(c2, canvas);
+        blank_point(c2, canvas);
     } else {
         if (diff.y > diff.x) {
             grad_line(c2, c1, canvas);
         } else {
             steep_line(c2, c1, canvas);
         }
-        add_point(c1, canvas);
+        blank_point(c1, canvas);
     }
 }
 
-static vx2 coords[] = {
-    { 2., 2. },
-    { 2., 30. },
-    { 30., 30. },
-    { 30., 2. },
-};
+typedef struct {
+    vx2 left;
+    vx2 mid;
+    vx2 right;
+} tri2;
+typedef struct {
+    vx3 p1;
+    vx3 p2;
+    vx3 p3;
+} tri3;
+
+void order(tri2 set) {
+    vx2 left = set.left;
+    vx2 right = set.left;
+    if (set.mid.x < left.x) { left = set.mid; } else { right = set.mid; }
+    if (set.right.x < left.x) { left = set.right; }
+    else if (set.right.x > right.x) { right = set.right; }
+}
+tri2 tri_project(tri3 set) {
+    tri2 ret = { project(set.p1), project(set.p2), project(set.p3) };
+    order(ret);
+    return ret;
+}
 
 vx3 inc_ref(vx3 point) {
-    double place = (point.x - 16.) - 0.1 * (16. - point.z);
-    point.z += 0.1 * (16. - point.x);
+    double place = (point.x - 16.) - 0.01 * (16. - point.z);
+    point.z += 0.01 * (16. - point.x);
     point.x = place + 16.;
     return point;
 }
@@ -122,17 +142,19 @@ int main() {
     char canvas[DIMY][DIMX * 2 + 1];
     make_spaces(canvas);
 
-    vx3 c1 = { 20., 2., 4., };
-    vx3 c2 = { 60., 2., 64., };
+    vx3 c1 = { 20., 13., 4., };
+    vx3 c2 = { 40., 30., 20., };
+    vx3 c3 = { 30., 6., 50., };
 
-    while (0 == 0) {
-        c1 = inc_ref(c1);
-        c2 = inc_ref(c2);
-        make_spaces(canvas);
-        make_line(project(c1), project(c2), canvas);
-        display(canvas);
-        usleep(10000);
-    }
+    vx2 d1 = project(c1);
+    vx2 d2 = project(c2);
+    vx2 d3 = project(c3);
+
+    make_line(d1, d2, canvas);
+    make_line(d2, d3, canvas);
+    make_line(d3, d1, canvas);
+
+    display(canvas);
 
     return 0;
 }
