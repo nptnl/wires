@@ -4,7 +4,7 @@
 
 static int DIMX = 64;
 static int DIMY = 64;
-static double FOCAL = 32;
+static double FOCAL = 64;
 
 typedef struct {
     double x;
@@ -136,8 +136,8 @@ tri2 tri_project(tri3 set) {
 // }
 
 vx3 inc_ref(vx3 point) {
-    double place = (point.x - 32.) - 0.001 * (32. - point.z);
-    point.z += 0.001 * (32. - point.x);
+    double place = (point.x - 32.) + 0.001 * (32. - point.z);
+    point.z -= 0.001 * (32. - point.x);
     point.x = place + 32.;
     return point;
 }
